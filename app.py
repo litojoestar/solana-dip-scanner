@@ -136,7 +136,7 @@ def assess_pair_risk(price, liquidity, volume_24h, pair_age_hours):
         risks.append("Paire très récente : moins de 24 h")
 
     return risks
-    try:def check_stabilization(pool_def assess_pair_risk(price, liquidity, volume_24h, pair_age_hours):
+    
     """Signale les risques évidents à partir des données de marché."""
     risks = []
 
