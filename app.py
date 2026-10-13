@@ -30,7 +30,22 @@ def get_json(url, timeout=15):
     return r.json()
 
 def safe_num(value, default=0.0):
-    try:def check_stabilization(pool_address):
+    try:def check_stabilization(pool_def assess_pair_risk(price, liquidity, volume_24h, pair_age_hours):
+    """Signale les risques évidents à partir des données de marché."""
+    risks = []
+
+    if price is None or safe_num(price, 0) <= 0:
+        risks.append("Prix absent ou invalide")
+    if liquidity is None or safe_num(liquidity, 0) < 10000:
+        risks.append("Liquidité inférieure à 10 000 $")
+    if volume_24h is None or safe_num(volume_24h, -1) < 0:
+        risks.append("Volume 24 h absent ou invalide")
+    if pair_age_hours is None or safe_num(pair_age_hours, -1) < 0:
+        risks.append("Âge de paire indisponible")
+    elif safe_num(pair_age_hours, 0) < 24:
+        risks.append("Paire très récente : moins de 24 h")
+
+    return risks
     """Vérifie prudemment les 3 dernières bougies de 5 minutes."""
     if not pool_address:
         return False, "Adresse de pool manquante"
@@ -156,7 +171,36 @@ if df.empty:
     st.stop()
 
 filtered = df[(df["Liquidité ($)"] >= min_liq) & (df["Volume 24 h ($)"] >= min_vol)]
-if only_dips:
+if only_dips:filtered = filtered.copy()
+
+for idx, row in filtered.iterrows():
+    risks = []
+    age = pd.to_numeric(row.get("Âge paire (h)"), errors="coerce")
+    price = pd.to_numeric(row.get("Prix ($)"), errors="coerce")
+    liquidity = pd.to_numeric(row.get("Liquidité ($)"), errors="coerce")
+    volume = pd.to_numeric(row.get("Volume 24 h ($)"), errors="coerce")
+
+    if pd.isna(age):
+        risks.append("Âge indisponible")
+    elif age < 24:
+        risks.append("Paire très récente (<24 h)")
+
+    if pd.isna(price) or price <= 0:
+        risks.append("Prix absent ou invalide")
+    if pd.isna(liquidity) or liquidity < 10000:
+        risks.append("Liquidité faible (<10 000 $)")
+    if pd.isna(volume) or volume < 0:
+        risks.append("Volume invalide")
+
+    existing = str(row.get("Risques / notes", "")).strip()
+    all_risks = [
+        r for r in [existing, "; ".join(risks)]
+        if r and r.lower() != "nan"
+    ]
+    filtered.at[idx, "Risques / notes"] = (
+        "; ".join(all_risks) if all_risks
+        else "Aucun risque détecté par ces contrôles simples"
+    )
     filtered = filtered[(filtered["Variation 24 h (%)"] <= -dip_min) & (filtered["Variation 24 h (%)"] >= -dip_max)]
 
 c1, c2, c3 = st.columns(3)
