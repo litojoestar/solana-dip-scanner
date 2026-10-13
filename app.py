@@ -57,7 +57,7 @@ def load_market():
     pairs = get_json(TOKENS_URL + ",".join(addresses))
     return pairs if isinstance(pairs, list) else []
 
-if st.button("🔄 Actualiser les données", type="primary):
+if st.button("🔄 Actualiser les données", type="primary"):
     load_market.clear()
 
 try:
