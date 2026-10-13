@@ -29,7 +29,76 @@ def get_json(url, timeout=15):
     r.raise_for_status()
     return r.json()
 
-def safe_num(value, default=0.0):
+def safe_num(value, default=0.0):def safe_num(value, default=0.0):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def check_stabilization(pool_address):
+    """Vérifie prudemment les 3 dernières bougies de 5 minutes."""
+    if not pool_address:
+        return False, "Adresse de pool manquante"
+
+    url = (
+        "https://api.geckoterminal.com/api/v2/networks/solana/pools/"
+        f"{pool_address}/ohlcv/minute?aggregate=5&limit=6&currency=usd&token=base"
+    )
+
+    try:
+        response = requests.get(
+            url, timeout=10, headers={"Accept": "application/json"}
+        )
+        response.raise_for_status()
+        data = (
+            response.json()
+            .get("data", {})
+            .get("attributes", {})
+            .get("ohlcv_list", [])
+        )
+
+        if len(data) < 3:
+            return False, "Historique de bougies insuffisant"
+
+        candles = list(reversed(data))
+        recent = candles[-3:]
+        lows = [safe_num(c[3], -1) for c in recent]
+        closes = [safe_num(c[4], -1) for c in recent]
+
+        if any(value <= 0 for value in lows + closes):
+            return False, "Bougies invalides ou incomplètes"
+
+        stable = lows[-1] >= min(lows[:-1]) and closes[-1] >= closes[-2]
+
+        if stable:
+            return True, "Stabilisation provisoire détectée"
+
+        return False, "Pas de stabilisation confirmée"
+
+    except Exception:
+        return False, "Historique indisponible — stabilisation non vérifiée"
+
+
+def assess_pair_risk(price, liquidity, volume_24h, pair_age_hours):
+    """Signale les risques évidents à partir des données de marché."""
+    risks = []
+
+    if price is None or safe_num(price, 0) <= 0:
+        risks.append("Prix absent ou invalide")
+
+    if liquidity is None or safe_num(liquidity, 0) < 10000:
+        risks.append("Liquidité inférieure à 10 000 $")
+
+    if volume_24h is None or safe_num(volume_24h, -1) < 0:
+        risks.append("Volume 24 h absent ou invalide")
+
+    if pair_age_hours is None or safe_num(pair_age_hours, -1) < 0:
+        risks.append("Âge de paire indisponible")
+    elif safe_num(pair_age_hours, 0) < 24:
+        risks.append("Paire très récente : moins de 24 h")
+
+    return risks
     try:def check_stabilization(pool_def assess_pair_risk(price, liquidity, volume_24h, pair_age_hours):
     """Signale les risques évidents à partir des données de marché."""
     risks = []
