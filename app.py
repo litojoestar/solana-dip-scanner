@@ -29,13 +29,13 @@ def get_json(url, timeout=15):
     r.raise_for_status()
     return r.json()
 
-def safe_num(value, default=0.0):def safe_num(value, default=0.0):
+def safe_num(value, default=0.0):
     try:
         return float(value)
     except (TypeError, ValueError):
         return default
-
-
+def check_stabilization(pool_address):
+def assess_pair_risk(price, liquidity, volume_24h, pair_age_hours):
 def check_stabilization(pool_address):
     """Vérifie prudemment les 3 dernières bougies de 5 minutes."""
     if not pool_address:
