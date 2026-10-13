@@ -35,8 +35,7 @@ def safe_num(value, default=0.0):
     except (TypeError, ValueError):
         return default
 def check_stabilization(pool_address):
-def assess_pair_risk(price, liquidity, volume_24h, pair_age_hours):
-def check_stabilization(pool_address):
+
     """Vérifie prudemment les 3 dernières bougies de 5 minutes."""
     if not pool_address:
         return False, "Adresse de pool manquante"
