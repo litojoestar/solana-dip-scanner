@@ -30,7 +30,41 @@ def get_json(url, timeout=15):
     return r.json()
 
 def safe_num(value, default=0.0):
+    try:def check_stabilization(pool_address):
+    """Vérifie prudemment les 3 dernières bougies de 5 minutes."""
+    if not pool_address:
+        return False, "Adresse de pool manquante"
+
+    url = (
+        "https://api.geckoterminal.com/api/v2/networks/solana/pools/"
+        f"{pool_address}/ohlcv/minute?aggregate=5&limit=6&currency=usd&token=base"
+    )
     try:
+        response = requests.get(
+            url, timeout=10, headers={"Accept": "application/json"}
+        )
+        response.raise_for_status()
+        data = response.json().get("data", {}).get("attributes", {}).get("ohlcv_list", [])
+
+        if len(data) < 3:
+            return False, "Historique de bougies insuffisant"
+
+        candles = list(reversed(data))
+        recent = candles[-3:]
+        lows = [safe_num(c[3], -1) for c in recent]
+        closes = [safe_num(c[4], -1) for c in recent]
+
+        if any(value <= 0 for value in lows + closes):
+            return False, "Bougies invalides ou incomplètes"
+
+        stable = lows[-1] >= min(lows[:-1]) and closes[-1] >= closes[-2]
+
+        if stable:
+            return True, "Stabilisation provisoire détectée"
+        return False, "Pas de stabilisation confirmée"
+
+    except Exception:
+        return False, "Historique indisponible — stabilisation non vérifiée"
         return float(value or 0)
     except (TypeError, ValueError):
         return default
