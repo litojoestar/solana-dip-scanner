@@ -335,7 +335,7 @@ else:
     )
 
 with st.expander("Détails des données brutes"):
-    st.dataframe(df, use_container_width=True, hide_index=True)
+st.dataframe(filtered[display_cols], use_container_width=True, hide_index=True)
 
 st.subheader("Telegram — configuration facultative")
 st.write("Pour activer les alertes, ajoute les secrets `TELEGRAM_BOT_TOKEN` et `TELEGRAM_CHAT_ID` dans les paramètres Secrets de Streamlit. Les alertes sont envoyées uniquement quand tu appuies sur le bouton ci-dessous.")
